@@ -31,30 +31,31 @@ const SERVER_PORT: u16 = 443;
 const URI: &str = "/";
 
 const THREADS: usize = 16;
-const ITERATIONS: u16 = 50;
+const ITERATIONS: u16 = 5000;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tracing_subscriber::fmt().with_max_level(Level::INFO).init();
+    // tracing_subscriber::fmt().with_max_level(Level::INFO).init();
 
-    tracing::info!("Starting {THREADS} threads for {ITERATIONS} iterations each...");
+    // tracing::info!("Starting {THREADS} threads for {ITERATIONS} iterations each...");
 
     let mut threads = JoinSet::new();
     for thread in 1..=THREADS {
         threads.spawn(
             async move {
                 for iteration in 1..=ITERATIONS {
-                    let span = span!(Level::INFO, "", iteration);
-                    let _enter = span.enter();
+                    // let span = span!(Level::INFO, "", iteration);
+                    // let _enter = span.enter();
 
                     let _ = notarize(URI).await.map_err(|e| {
-                        tracing::error!("{}", e);
+                        eprintln!("{}", e);
                     });
 
+                    println!("Iteration {iteration} completed on thread {thread}",);
                     tokio::time::sleep(Duration::from_secs(3)).await;
                 }
             }
-            .instrument(span!(Level::INFO, "", thread)),
+            // .instrument(span!(Level::INFO, "", thread)),
         );
     }
 
@@ -158,12 +159,12 @@ async fn notarize(uri: &str) -> Result<(), Box<dyn std::error::Error>> {
 
     let request = request_builder.body(Empty::<Bytes>::new())?;
 
-    tracing::info!("Starting an MPC TLS connection with the server");
+    // tracing::info!("Starting an MPC TLS connection with the server");
 
     // Send the request to the server and wait for the response.
     let response = request_sender.send_request(request).await?;
 
-    tracing::info!("Got a response from the server: {}", response.status());
+    // tracing::info!("Got a response from the server: {}", response.status());
 
     assert!(response.status() == StatusCode::OK);
 
@@ -203,7 +204,7 @@ async fn notarize(uri: &str) -> Result<(), Box<dyn std::error::Error>> {
 
     let (attestation, secrets) = prover.finalize(&request_config).await?;
 
-    tracing::info!("Notarization complete!");
+    // tracing::info!("Notarization complete!");
 
     // Write the attestation to disk.
     let attestation_path = "example-attestation.tlsn";
@@ -214,11 +215,11 @@ async fn notarize(uri: &str) -> Result<(), Box<dyn std::error::Error>> {
     // Write the secrets to disk.
     tokio::fs::write(&secrets_path, bincode::serialize(&secrets)?).await?;
 
-    tracing::info!("Notarization completed successfully!");
-    tracing::info!(
-        "The attestation has been written to `{attestation_path}` and the \
-        corresponding secrets to `{secrets_path}`."
-    );
+    // tracing::info!("Notarization completed successfully!");
+    // tracing::info!(
+    //     "The attestation has been written to `{attestation_path}` and the \
+    //     corresponding secrets to `{secrets_path}`."
+    // );
 
     Ok(())
 }
